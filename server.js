@@ -47,9 +47,7 @@ function requireRole(allowedRoles) {
 }
 
 // 🏠 Test route
-app.get("/", (req, res) => {
-  res.send("Live Auction API running!");
-});
+app.get("/", (req, res) => res.send("Live Auction API running!"));
 
 // 🔗 Step 1: Discord login redirect
 app.get("/auth/discord", (req, res) => {
@@ -205,6 +203,4 @@ app.post("/api/admin/settings", requireRole([
 
 // ✅ Start server
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
