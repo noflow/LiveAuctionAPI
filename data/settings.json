@@ -1,0 +1,7 @@
+{
+  "timerDuration": 15,
+  "nominationCost": 1,
+  "matchBidEnabled": true,
+  "minRosterSize": 12,
+  "maxRosterSize": 17
+}
