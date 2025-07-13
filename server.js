@@ -13,12 +13,6 @@ app.use(express.json());
 
 const SETTINGS_PATH = path.join(__dirname, "data", "settings.json");
 
-// 🔍 Debug: log all incoming requests
-app.use((req, res, next) => {
-  console.log(`[${new Date().toISOString()}] ${req.method} ${req.originalUrl}`);
-  next();
-});
-
 // 🔐 Role-protection middleware
 function requireRole(allowedRoles) {
   return async (req, res, next) => {
@@ -52,11 +46,8 @@ function requireRole(allowedRoles) {
   };
 }
 
-// 🏠 Root route
-app.get("/", (req, res) => {
-  console.log("✅ Root route hit");
-  res.send("Live Auction API running!");
-});
+// 🏠 Test route
+app.get("/", (req, res) => res.send("Live Auction API running!"));
 
 // 🔗 Step 1: Discord login redirect
 app.get("/auth/discord", (req, res) => {
@@ -98,7 +89,7 @@ app.get("/auth/callback", async (req, res) => {
       maxAge: 86400000,
     });
 
-    console.log("✅ Logged in:", user.username);
+    console.log("Logged in:", user.username);
 
     res.redirect("https://wcahockey.com/draft/participate");
   } catch (err) {
@@ -210,12 +201,6 @@ app.post("/api/admin/settings", requireRole([
   }
 });
 
-// 🟢 Keepalive ping to ensure Railway container stays warm
-setInterval(() => {
-  console.log("⏱️ Keepalive ping - server is still running");
-}, 1000 * 60 * 5); // every 5 minutes
-
 // ✅ Start server
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
-
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
