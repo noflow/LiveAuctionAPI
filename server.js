@@ -49,7 +49,7 @@ function requireRole(allowedRoles) {
 // 🏠 Test route
 app.get("/", (req, res) => res.send("Live Auction API running!"));
 
-// 🔗 Step 1: Discord login redirect
+// 🔗 Discord login redirect
 app.get("/auth/discord", (req, res) => {
   const redirect_uri = encodeURIComponent(process.env.DISCORD_REDIRECT_URI);
   const client_id = process.env.DISCORD_CLIENT_ID;
@@ -58,7 +58,7 @@ app.get("/auth/discord", (req, res) => {
   res.redirect(url);
 });
 
-// 🔐 Step 2: OAuth2 callback handler
+// 🔐 OAuth2 callback
 app.get("/auth/callback", async (req, res) => {
   const code = req.query.code;
   if (!code) return res.status(400).send("Missing code");
@@ -139,16 +139,30 @@ app.get("/api/roles", async (req, res) => {
   }
 });
 
-// 🟢 Nominate
+// 🟢 Nominate (calls bot via internal HTTP)
 app.post("/api/nominate", requireRole([
   process.env.ROLE_OWNER,
   process.env.ROLE_GM,
   process.env.ROLE_ADMIN,
-]), (req, res) => {
-  res.send("✅ Nomination accepted");
+]), async (req, res) => {
+  const user = JSON.parse(req.cookies.user);
+  const { player } = req.body;
+
+  try {
+    const result = await axios.post("http://localhost:5050/nominate", {
+      userId: user.id,
+      username: user.username,
+      player
+    });
+
+    res.json(result.data);
+  } catch (err) {
+    console.error("❌ Error forwarding to bot:", err.response?.data || err.message);
+    res.status(500).send("Failed to forward nomination to bot");
+  }
 });
 
-// 🟢 Bid
+// 🟢 Bid (still placeholder)
 app.post("/api/bid", requireRole([
   process.env.ROLE_OWNER,
   process.env.ROLE_GM,
