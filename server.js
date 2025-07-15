@@ -85,7 +85,9 @@ app.get("/auth/callback", async (req, res) => {
     const user = userResponse.data;
 
     res.cookie("user", JSON.stringify(user), {
-      httpOnly: false,
+      httpOnly: true,
+      secure: true,
+      sameSite: "None",
       maxAge: 86400000,
     });
 
