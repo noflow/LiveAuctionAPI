@@ -107,6 +107,7 @@ app.get("/api/me", (req, res) => {
 
 // 🔍 Return user roles
 app.get("/api/roles", async (req, res) => {
+  console.log("🔍 Incoming cookies:", req.cookies);
   const userCookie = req.cookies.user;
   if (!userCookie) return res.status(401).send("Not logged in");
 
