@@ -197,10 +197,12 @@ app.post("/api/admin/settings", requireRole([
     const updates = req.body;
     const allowedKeys = [
       "timerDuration",
+      "resetClock",
       "nominationCost",
       "matchBidEnabled",
       "minRosterSize",
-      "maxRosterSize"
+      "maxRosterSize",
+      "minimumBidIncrement"
     ];
 
     const current = JSON.parse(fs.readFileSync(SETTINGS_PATH, "utf8"));
