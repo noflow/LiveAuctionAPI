@@ -1,4 +1,6 @@
 const express = require("express");
+const http = require("http");
+const { Server } = require("socket.io");
 const axios = require("axios");
 const cookieParser = require("cookie-parser");
 const cors = require("cors");
@@ -158,6 +160,12 @@ app.post("/api/nominate", requireRole([
       player
     });
 
+    const io = req.app.get("io");
+    io.emit("player:nominated", {
+      player,
+      team: user.username,
+      amount: 1
+    });
     res.json(result.data);
   } catch (err) {
     console.error("❌ Error forwarding to bot:", err.response?.data || err.message);
@@ -221,9 +229,18 @@ app.post("/api/admin/settings", requireRole([
 });
 
 // ✅ Start server
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: "https://wcahockey.com",
+    credentials: true,
+  }
+});
+app.set("io", io);
+
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+server.listen(PORT, () => {
+  console.log(`Server + WebSocket running on port ${PORT}`);
 });
 
 app.post("/api/admin/force-nominate", requireRole([process.env.ROLE_ADMIN]), async (req, res) => {
@@ -235,6 +252,12 @@ app.post("/api/admin/force-nominate", requireRole([process.env.ROLE_ADMIN]), asy
       username: user.username,
       player
     });
+    const io = req.app.get("io");
+    io.emit("player:nominated", {
+      player,
+      team: user.username,
+      amount: 1
+    });
     res.json(result.data);
   } catch (err) {
     console.error("Force nominate error:", err.response?.data || err.message);
@@ -245,6 +268,12 @@ app.post("/api/admin/force-nominate", requireRole([process.env.ROLE_ADMIN]), asy
 app.post("/api/admin/skip-nominator", requireRole([process.env.ROLE_ADMIN]), async (req, res) => {
   try {
     const result = await axios.post("http://localhost:5050/skip-nominator");
+    const io = req.app.get("io");
+    io.emit("player:nominated", {
+      player,
+      team: user.username,
+      amount: 1
+    });
     res.json(result.data);
   } catch (err) {
     console.error("Skip nominator error:", err.response?.data || err.message);
@@ -255,6 +284,12 @@ app.post("/api/admin/skip-nominator", requireRole([process.env.ROLE_ADMIN]), asy
 app.post("/api/admin/toggle-pause", requireRole([process.env.ROLE_ADMIN]), async (req, res) => {
   try {
     const result = await axios.post("http://localhost:5050/toggle-pause");
+    const io = req.app.get("io");
+    io.emit("player:nominated", {
+      player,
+      team: user.username,
+      amount: 1
+    });
     res.json(result.data);
   } catch (err) {
     console.error("Pause toggle error:", err.response?.data || err.message);
