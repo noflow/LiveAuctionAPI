@@ -1,3 +1,4 @@
+// NOTE: run `npm install http-proxy-middleware` if not already installed
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
@@ -12,6 +13,14 @@ const app = express();
 app.use(cors({ origin: "https://wcahockey.com", credentials: true }));
 app.use(cookieParser());
 app.use(express.json());
+
+// 🔁 Proxy to Python Flask bot
+const { createProxyMiddleware } = require("http-proxy-middleware");
+app.use("/api/auction/state", createProxyMiddleware({
+  target: "http://localhost:5050",
+  changeOrigin: true,
+  pathRewrite: { "^/api": "" }
+}));
 
 const SETTINGS_PATH = path.join(__dirname, "data", "settings.json");
 
