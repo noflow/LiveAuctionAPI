@@ -225,3 +225,39 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
+
+app.post("/api/admin/force-nominate", requireRole([process.env.ROLE_ADMIN]), async (req, res) => {
+  const { player } = req.body;
+  const user = JSON.parse(req.cookies.user);
+  try {
+    const result = await axios.post("http://localhost:5050/force-nominate", {
+      userId: user.id,
+      username: user.username,
+      player
+    });
+    res.json(result.data);
+  } catch (err) {
+    console.error("Force nominate error:", err.response?.data || err.message);
+    res.status(500).send("Failed to force nominate");
+  }
+});
+
+app.post("/api/admin/skip-nominator", requireRole([process.env.ROLE_ADMIN]), async (req, res) => {
+  try {
+    const result = await axios.post("http://localhost:5050/skip-nominator");
+    res.json(result.data);
+  } catch (err) {
+    console.error("Skip nominator error:", err.response?.data || err.message);
+    res.status(500).send("Failed to skip nominator");
+  }
+});
+
+app.post("/api/admin/toggle-pause", requireRole([process.env.ROLE_ADMIN]), async (req, res) => {
+  try {
+    const result = await axios.post("http://localhost:5050/toggle-pause");
+    res.json(result.data);
+  } catch (err) {
+    console.error("Pause toggle error:", err.response?.data || err.message);
+    res.status(500).send("Failed to toggle pause");
+  }
+});
