@@ -197,26 +197,39 @@ app.get("/api/admin/settings", requireRole([
 });
 
 // 🔐 Admin Settings - POST
+
 app.post("/api/admin/settings", requireRole([
   process.env.ROLE_ADMIN,
   process.env.ROLE_COMMISSIONER,
 ]), (req, res) => {
   try {
     const updates = req.body;
-    const allowedKeys = [
-      "timerDuration",
-      "resetClock",
-      "nominationCost",
-      "matchBidEnabled",
-      "minRosterSize",
-      "maxRosterSize",
-      "minimumBidIncrement"
-    ];
+    const allowedKeys = {
+      timerDuration: { type: "number", min: 5, max: 120 },
+      resetClock: { type: "number", min: 5, max: 60 },
+      nominationCost: { type: "number", min: 1 },
+      matchBidEnabled: { type: "boolean" },
+      minRosterSize: { type: "number", min: 1 },
+      maxRosterSize: { type: "number", min: 1 },
+      minimumBidIncrement: { type: "number", min: 1 }
+    };
 
     const current = JSON.parse(fs.readFileSync(SETTINGS_PATH, "utf8"));
-    for (let key of Object.keys(updates)) {
-      if (allowedKeys.includes(key)) {
-        current[key] = updates[key];
+
+    for (const [key, val] of Object.entries(updates)) {
+      const rules = allowedKeys[key];
+      if (!rules) continue;
+
+      const validType = (rules.type === typeof val);
+      const validRange = typeof val === "number"
+        ? (val >= (rules.min || 0) && (!rules.max || val <= rules.max))
+        : true;
+
+      if (validType && validRange) {
+        console.log(`✅ [settings] ${key} updated to: ${val}`);
+        current[key] = val;
+      } else {
+        console.warn(`⚠️ Invalid setting ignored: ${key}=${val}`);
       }
     }
 
@@ -227,6 +240,7 @@ app.post("/api/admin/settings", requireRole([
     res.status(500).send("Failed to update settings");
   }
 });
+
 
 // ✅ Start server
 const server = http.createServer(app);
