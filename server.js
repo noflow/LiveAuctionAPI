@@ -17,7 +17,7 @@ app.use(express.json());
 // 🔁 Proxy to Python Flask bot
 const { createProxyMiddleware } = require("http-proxy-middleware");
 app.use("/api/auction/state", createProxyMiddleware({
-  target: "http://localhost:5050",
+  target: "http://liveauctionbot.railway.internal:5050",
   changeOrigin: true,
   pathRewrite: { "^/api": "" }
 }));
@@ -163,7 +163,7 @@ app.post("/api/nominate", requireRole([
   const { player } = req.body;
 
   try {
-    const result = await axios.post("http://localhost:5050/nominate", {
+    const result = await axios.post("http://liveauctionbot.railway.internal:5050/nominate", {
       userId: user.id,
       username: user.username,
       player
@@ -270,7 +270,7 @@ app.post("/api/admin/force-nominate", requireRole([process.env.ROLE_ADMIN]), asy
   const { player } = req.body;
   const user = JSON.parse(req.cookies.user);
   try {
-    const result = await axios.post("http://localhost:5050/force-nominate", {
+    const result = await axios.post("http://liveauctionbot.railway.internal:5050/force-nominate", {
       userId: user.id,
       username: user.username,
       player
@@ -290,7 +290,7 @@ app.post("/api/admin/force-nominate", requireRole([process.env.ROLE_ADMIN]), asy
 
 app.post("/api/admin/skip-nominator", requireRole([process.env.ROLE_ADMIN]), async (req, res) => {
   try {
-    const result = await axios.post("http://localhost:5050/skip-nominator");
+    const result = await axios.post("http://liveauctionbot.railway.internal:5050/skip-nominator");
     const io = req.app.get("io");
     io.emit("player:nominated", {
       player,
@@ -306,7 +306,7 @@ app.post("/api/admin/skip-nominator", requireRole([process.env.ROLE_ADMIN]), asy
 
 app.post("/api/admin/toggle-pause", requireRole([process.env.ROLE_ADMIN]), async (req, res) => {
   try {
-    const result = await axios.post("http://localhost:5050/toggle-pause");
+    const result = await axios.post("http://liveauctionbot.railway.internal:5050/toggle-pause");
     const io = req.app.get("io");
     io.emit("player:nominated", {
       player,
