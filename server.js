@@ -1,4 +1,3 @@
-const BOT_BASE_URL = "https://bot.wcahockey.com";
 // NOTE: run `npm install http-proxy-middleware` if not already installed
 const express = require("express");
 const http = require("http");
@@ -11,7 +10,21 @@ const path = require("path");
 require("dotenv").config();
 
 const app = express();
-app.use(cors({ origin: "https://wcahockey.com", credentials: true }));
+const allowedOrigins = [
+  "https://wcahockey.com",
+  "https://bot.wcahockey.com"
+];
+
+app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
+  credentials: true
+}));
 app.use(cookieParser());
 app.use(express.json());
 
