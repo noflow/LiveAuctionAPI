@@ -319,3 +319,8 @@ app.post("/api/admin/toggle-pause", requireRole([process.env.ROLE_ADMIN]), async
     res.status(500).send("Failed to toggle pause");
   }
 });
+app.use("/api/health", createProxyMiddleware({
+  target: "http://liveauctionbot.railway.internal:5050",
+  changeOrigin: true,
+  pathRewrite: { "^/api": "" }
+}));
