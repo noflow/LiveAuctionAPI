@@ -10,21 +10,7 @@ const path = require("path");
 require("dotenv").config();
 
 const app = express();
-const allowedOrigins = [
-  "https://wcahockey.com",
-  "https://bot.wcahockey.com"
-];
-
-app.use(cors({
-  origin: function (origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error("Not allowed by CORS"));
-    }
-  },
-  credentials: true
-}));
+app.use(cors({ origin: "https://wcahockey.com", credentials: true }));
 app.use(cookieParser());
 app.use(express.json());
 
