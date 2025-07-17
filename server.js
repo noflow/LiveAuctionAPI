@@ -16,11 +16,13 @@ app.use(express.json());
 
 // 🔁 Proxy to Python Flask bot
 const { createProxyMiddleware } = require("http-proxy-middleware");
-app.use("/api/auction/state", createProxyMiddleware({
+
+app.use("/api", createProxyMiddleware({
   target: "https://bot.wcahockey.com",
   changeOrigin: true,
   pathRewrite: { "^/api": "" }
 }));
+
 
 const SETTINGS_PATH = path.join(__dirname, "data", "settings.json");
 
