@@ -1,3 +1,4 @@
+const BOT_BASE_URL = "https://bot.wcahockey.com";
 // NOTE: run `npm install http-proxy-middleware` if not already installed
 const express = require("express");
 const http = require("http");
