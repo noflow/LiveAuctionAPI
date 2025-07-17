@@ -320,7 +320,7 @@ app.post("/api/admin/toggle-pause", requireRole([process.env.ROLE_ADMIN]), async
   }
 });
 app.use("/api/health", createProxyMiddleware({
-  target: "http://liveauctionbot.railway.internal:5050",
+  target: "https://bot.wcahockey.com",
   changeOrigin: true,
   pathRewrite: { "^/api": "" }
 }));
