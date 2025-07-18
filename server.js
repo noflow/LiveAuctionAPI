@@ -7,6 +7,7 @@ const cookieParser = require("cookie-parser");
 const cors = require("cors");
 const fs = require("fs");
 const path = require("path");
+const { createProxyMiddleware } = require("http-proxy-middleware"); // ✅ Moved here
 require("dotenv").config();
 
 const app = express();
@@ -14,10 +15,8 @@ app.use(cors({ origin: "https://wcahockey.com", credentials: true }));
 app.use(cookieParser());
 app.use(express.json());
 
-// 🔁 Proxy to Python Flask bot
 const SETTINGS_PATH = path.join(__dirname, "data", "settings.json");
 
-// 🔐 Role-protection middleware
 function requireRole(allowedRoles) {
   return async (req, res, next) => {
     const userCookie = req.cookies.user;
@@ -50,10 +49,8 @@ function requireRole(allowedRoles) {
   };
 }
 
-// 🏠 Test route
 app.get("/", (req, res) => res.send("Live Auction API running!"));
 
-// 🔗 Discord login redirect
 app.get("/auth/discord", (req, res) => {
   const redirect_uri = encodeURIComponent(process.env.DISCORD_REDIRECT_URI);
   const client_id = process.env.DISCORD_CLIENT_ID;
@@ -62,7 +59,6 @@ app.get("/auth/discord", (req, res) => {
   res.redirect(url);
 });
 
-// 🔐 OAuth2 callback
 app.get("/auth/callback", async (req, res) => {
   const code = req.query.code;
   if (!code) return res.status(400).send("Missing code");
@@ -104,14 +100,12 @@ app.get("/auth/callback", async (req, res) => {
   }
 });
 
-// 👤 Return user info
 app.get("/api/me", (req, res) => {
   const user = req.cookies.user;
   if (!user) return res.status(401).send("Not logged in");
   res.json(JSON.parse(user));
 });
 
-// 🔍 Return user roles
 app.get("/api/roles", async (req, res) => {
   console.log("🔍 Incoming cookies:", req.cookies);
   const userCookie = req.cookies.user;
@@ -146,7 +140,6 @@ app.get("/api/roles", async (req, res) => {
   }
 });
 
-// 🟢 Nominate (calls bot via internal HTTP)
 app.post("/api/nominate", requireRole([
   process.env.ROLE_OWNER,
   process.env.ROLE_GM,
@@ -163,7 +156,6 @@ app.post("/api/nominate", requireRole([
     });
 
     const io = req.app.get("io");
-    const user = JSON.parse(req.cookies.user);
     io.emit("player:nominated", { player, team: user.username, amount: 1 });
     res.json(result.data);
   } catch (err) {
@@ -172,7 +164,6 @@ app.post("/api/nominate", requireRole([
   }
 });
 
-// 🟢 Bid (still placeholder)
 app.post("/api/bid", requireRole([
   process.env.ROLE_OWNER,
   process.env.ROLE_GM,
@@ -181,7 +172,6 @@ app.post("/api/bid", requireRole([
   res.send("✅ Bid accepted");
 });
 
-// 🔐 Admin Settings - GET
 app.get("/api/admin/settings", requireRole([
   process.env.ROLE_ADMIN,
   process.env.ROLE_COMMISSIONER,
@@ -194,8 +184,6 @@ app.get("/api/admin/settings", requireRole([
     res.status(500).send("Failed to load settings");
   }
 });
-
-// 🔐 Admin Settings - POST
 
 app.post("/api/admin/settings", requireRole([
   process.env.ROLE_ADMIN,
@@ -240,8 +228,6 @@ app.post("/api/admin/settings", requireRole([
   }
 });
 
-
-// ✅ Start server
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
@@ -266,7 +252,6 @@ app.post("/api/admin/force-nominate", requireRole([process.env.ROLE_ADMIN]), asy
       player
     });
     const io = req.app.get("io");
-    const user = JSON.parse(req.cookies.user);
     io.emit("player:nominated", { player, team: user.username, amount: 1 });
     res.json(result.data);
   } catch (err) {
@@ -301,7 +286,6 @@ app.post("/api/admin/toggle-pause", requireRole([process.env.ROLE_ADMIN]), async
   }
 });
 
-
 // 🔁 Proxy Discord auth requests to Flask bot
 app.use("/auth", createProxyMiddleware({
   target: "https://bot.wcahockey.com",
@@ -309,7 +293,6 @@ app.use("/auth", createProxyMiddleware({
 }));
 
 // 🔁 Proxy to Flask bot for all /api/* routes (fallback)
-const { createProxyMiddleware } = require("http-proxy-middleware");
 app.use("/api", createProxyMiddleware({
   target: "https://bot.wcahockey.com",
   changeOrigin: true,
