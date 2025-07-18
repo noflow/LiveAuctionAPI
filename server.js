@@ -15,13 +15,6 @@ app.use(cookieParser());
 app.use(express.json());
 
 // 🔁 Proxy to Python Flask bot
-const { createProxyMiddleware } = require("http-proxy-middleware");
-app.use("/api/auction/state", createProxyMiddleware({
-  target: "http://localhost:5050",
-  changeOrigin: true,
-  pathRewrite: { "^/api": "" }
-}));
-
 const SETTINGS_PATH = path.join(__dirname, "data", "settings.json");
 
 // 🔐 Role-protection middleware
@@ -163,18 +156,15 @@ app.post("/api/nominate", requireRole([
   const { player } = req.body;
 
   try {
-    const result = await axios.post("http://localhost:5050/nominate", {
+    const result = await axios.post("https://bot.wcahockey.com/nominate", {
       userId: user.id,
       username: user.username,
       player
     });
 
     const io = req.app.get("io");
-    io.emit("player:nominated", {
-      player,
-      team: user.username,
-      amount: 1
-    });
+    const user = JSON.parse(req.cookies.user);
+    io.emit("player:nominated", { player, team: user.username, amount: 1 });
     res.json(result.data);
   } catch (err) {
     console.error("❌ Error forwarding to bot:", err.response?.data || err.message);
@@ -270,17 +260,14 @@ app.post("/api/admin/force-nominate", requireRole([process.env.ROLE_ADMIN]), asy
   const { player } = req.body;
   const user = JSON.parse(req.cookies.user);
   try {
-    const result = await axios.post("http://localhost:5050/force-nominate", {
+    const result = await axios.post("https://bot.wcahockey.com/force-nominate", {
       userId: user.id,
       username: user.username,
       player
     });
     const io = req.app.get("io");
-    io.emit("player:nominated", {
-      player,
-      team: user.username,
-      amount: 1
-    });
+    const user = JSON.parse(req.cookies.user);
+    io.emit("player:nominated", { player, team: user.username, amount: 1 });
     res.json(result.data);
   } catch (err) {
     console.error("Force nominate error:", err.response?.data || err.message);
@@ -290,13 +277,10 @@ app.post("/api/admin/force-nominate", requireRole([process.env.ROLE_ADMIN]), asy
 
 app.post("/api/admin/skip-nominator", requireRole([process.env.ROLE_ADMIN]), async (req, res) => {
   try {
-    const result = await axios.post("http://localhost:5050/skip-nominator");
+    const result = await axios.post("https://bot.wcahockey.com/skip-nominator");
     const io = req.app.get("io");
-    io.emit("player:nominated", {
-      player,
-      team: user.username,
-      amount: 1
-    });
+    const user = JSON.parse(req.cookies.user);
+    io.emit("player:nominated", { player, team: user.username, amount: 1 });
     res.json(result.data);
   } catch (err) {
     console.error("Skip nominator error:", err.response?.data || err.message);
@@ -306,16 +290,28 @@ app.post("/api/admin/skip-nominator", requireRole([process.env.ROLE_ADMIN]), asy
 
 app.post("/api/admin/toggle-pause", requireRole([process.env.ROLE_ADMIN]), async (req, res) => {
   try {
-    const result = await axios.post("http://localhost:5050/toggle-pause");
+    const result = await axios.post("https://bot.wcahockey.com/toggle-pause");
     const io = req.app.get("io");
-    io.emit("player:nominated", {
-      player,
-      team: user.username,
-      amount: 1
-    });
+    const user = JSON.parse(req.cookies.user);
+    io.emit("player:nominated", { player, team: user.username, amount: 1 });
     res.json(result.data);
   } catch (err) {
     console.error("Pause toggle error:", err.response?.data || err.message);
     res.status(500).send("Failed to toggle pause");
   }
 });
+
+
+// 🔁 Proxy Discord auth requests to Flask bot
+app.use("/auth", createProxyMiddleware({
+  target: "https://bot.wcahockey.com",
+  changeOrigin: true
+}));
+
+// 🔁 Proxy to Flask bot for all /api/* routes (fallback)
+const { createProxyMiddleware } = require("http-proxy-middleware");
+app.use("/api", createProxyMiddleware({
+  target: "https://bot.wcahockey.com",
+  changeOrigin: true,
+  pathRewrite: { "^/api": "" }
+}));
