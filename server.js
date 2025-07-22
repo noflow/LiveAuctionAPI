@@ -298,3 +298,10 @@ app.use("/api", createProxyMiddleware({
   changeOrigin: true,
   pathRewrite: { "^/api": "" }
 }));
+
+// in server.js
+app.use("/api", createProxyMiddleware({
+  target: "http://localhost:5050",  // use port 5050!
+  changeOrigin: true,
+  pathRewrite: { "^/api": "" }
+}));
