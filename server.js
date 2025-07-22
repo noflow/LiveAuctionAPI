@@ -292,12 +292,6 @@ app.use("/auth", createProxyMiddleware({
   changeOrigin: true
 }));
 
-// 🔁 Proxy to Flask bot for all /api/* routes (fallback)
-app.use("/api", createProxyMiddleware({
-  target: "https://bot.wcahockey.com",
-  changeOrigin: true,
-  pathRewrite: { "^/api": "" }
-}));
 
 // in server.js
 app.use("/api", createProxyMiddleware({
