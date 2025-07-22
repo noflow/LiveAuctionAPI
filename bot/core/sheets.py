@@ -1,88 +1,74 @@
-import json, os
-from oauth2client.service_account import ServiceAccountCredentials
+
 import gspread
+import os
+import json
+from oauth2client.service_account import ServiceAccountCredentials
 
-# === Google Sheets Setup ===
-
-scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
-json_creds = os.environ.get('GOOGLE_CREDENTIALS_JSON')
-parsed = json.loads(json.loads(json_creds))  # double parse
+scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+json_creds = os.environ.get("GOOGLE_CREDENTIALS")
+if not json_creds:
+    raise RuntimeError("❌ GOOGLE_CREDENTIALS env variable is missing.")
+parsed = json.loads(json.loads(json_creds))
+print("[✅ Credentials loaded from GOOGLE_CREDENTIALS]")
 credentials = ServiceAccountCredentials.from_json_keyfile_dict(parsed, scope)
 client = gspread.authorize(credentials)
 
 SHEET_ID = "1QeLyKIgTSYFkLUqPcUrKyJBqTIo8WZoL-BI6tmqWcHk"
 
-def update_team_after_win(discord_id, bid_amount):
-    try:
-        sheet = client.open_by_key(SHEET_ID)
-        settings = sheet.worksheet("Settings")
-        data = settings.get_all_records()
+def get_sheet():
+    return client.open_by_key(SHEET_ID)
 
-        for i, row in enumerate(data):
-            if str(row.get("Owner Discord ID")) == str(discord_id) or str(row.get("GM Discord ID")) == str(discord_id):
-                used = float(row.get("Salary Used", 0))
-                roster = int(row.get("Roster Count", 0))
-                new_used = used + bid_amount
-                new_roster = roster + 1
-                row_index = i + 2
-                settings.update_cell(row_index, 7, new_used)
-                settings.update_cell(row_index, 8, new_roster)
-                return row.get("Team Name")
-        return None
-    except Exception as e:
-        print(f"[Error] update_team_after_win: {e}")
-        return None
+def load_draft_list():
+    sheet = get_sheet().worksheet("Draft List")
+    data = sheet.get_all_records()
+    result = []
+    for row in data:
+        result.append({
+            "id": row.get("PSN / XBL ID", "").strip(),
+            "position": row.get("Main Position", "").strip() + ("/" + row["Other Positions"].strip() if row.get("Other Positions") else ""),
+            "hand": row.get("Hand", "").strip()
+        })
+    return result
+
+def load_team_list():
+    sheet = get_sheet().worksheet("Team List")
+    return sheet.get_all_records()
+
+def update_team_after_win(team_name, amount, increment_roster=True):
+    sheet = get_sheet().worksheet("Team Settings")
+    data = sheet.get_all_records()
+    for idx, row in enumerate(data):
+        if row.get("Team Name", "").strip().lower() == team_name.strip().lower():
+            salary_used = float(row.get("Salary Used", 0)) + amount
+            salary_remaining = float(row.get("Salary", 0)) - salary_used
+            roster_count = int(row.get("Roster Count", 0)) + (1 if increment_roster else 0)
+            sheet.update(f"G{idx+2}", salary_used)
+            sheet.update(f"H{idx+2}", salary_remaining)
+            sheet.update(f"I{idx+2}", roster_count)
+            return
 
 def append_player_to_team_tab(team_name, player_name, amount):
-    try:
-        sheet = client.open_by_key(SHEET_ID)
-        team_sheet = sheet.worksheet("Team")
-
-        all_values = team_sheet.get_all_values()
-        insert_row = len(all_values) + 1
-        for i, row in enumerate(all_values):
-            if len(row) > 0 and row[0].strip() == team_name:
-                insert_row = i + 2
-                while insert_row <= len(all_values) and all_values[insert_row - 1][0].strip() == "":
-                    insert_row += 1
-                break
-
-        team_sheet.insert_row([player_name, f"${amount}"], insert_row)
-    except Exception as e:
-        print(f"[Error] append_player_to_team_tab: {e}")
+    sheet = get_sheet().worksheet("Team")
+    sheet.append_row([team_name, player_name, amount])
 
 def remove_player_from_draft(player_name):
-    try:
-        sheet = client.open_by_key(SHEET_ID)
-        draft_sheet = sheet.worksheet("Draft")
-        values = draft_sheet.get_all_values()
+    sheet = get_sheet().worksheet("Draft List")
+    data = sheet.get_all_records()
+    for idx, row in enumerate(data):
+        if row.get("PSN / XBL ID", "").strip().lower() == player_name.strip().lower():
+            sheet.delete_rows(idx + 2)
+            return
 
-        for i, row in enumerate(values):
-            if row and row[0].strip().lower() == player_name.strip().lower():
-                draft_sheet.delete_row(i + 1)
-                break
-    except Exception as e:
-        print(f"[Error] remove_player_from_draft: {e}")
-
-def get_team_limits(discord_id):
-    try:
-        sheet = client.open_by_key(SHEET_ID)
-        settings = sheet.worksheet("Settings")
-        records = settings.get_all_records()
-
-        for row in records:
-            if str(row.get("Owner Discord ID")) == str(discord_id) or str(row.get("GM Discord ID")) == str(discord_id):
-                salary = float(row.get("Salary", 0))
-                used = float(row.get("Salary Used", 0))
-                roster = int(row.get("Roster Count", 0))
-                return {
-                    "team": row.get("Team Name"),
-                    "salary": salary,
-                    "salary_used": used,
-                    "roster_count": roster,
-                    "remaining": salary - used
-                }
-        return None
-    except Exception as e:
-        print(f"[Error] get_team_limits: {e}")
-        return None
+def get_team_limits(team_name):
+    sheet = get_sheet().worksheet("Team Settings")
+    data = sheet.get_all_records()
+    for row in data:
+        if row.get("Team Name", "").strip().lower() == team_name.strip().lower():
+            return {
+                "min_roster": int(row.get("Min Roster", 0)),
+                "max_roster": int(row.get("Max Roster", 0)),
+                "salary": float(row.get("Salary", 0)),
+                "salary_used": float(row.get("Salary Used", 0)),
+                "roster_count": int(row.get("Roster Count", 0)),
+            }
+    return {}
