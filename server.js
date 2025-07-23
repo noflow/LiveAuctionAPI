@@ -296,10 +296,11 @@ app.use("/auth", createProxyMiddleware({
 app.use("/api", createProxyMiddleware({
   target: "https://bot.wcahockey.com",
   changeOrigin: true,
-  pathRewrite: { "^/api": "" }
+  pathRewrite: { "^/api": "" },
   onProxyReq: (proxyReq, req) => {
     if (req.cookies?.user) {
       proxyReq.setHeader('Cookie', `user=${req.cookies.user}`);
     }
   }
 }));
+
