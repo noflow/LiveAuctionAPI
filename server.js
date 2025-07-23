@@ -292,12 +292,10 @@ app.use("/auth", createProxyMiddleware({
   changeOrigin: true
 }));
 
-
-// in server.js
+// 🔁 Proxy all /api/* requests to Flask backend service
 app.use("/api", createProxyMiddleware({
   target: "https://bot.wcahockey.com",
   changeOrigin: true,
   pathRewrite: { "^/api": "" }
 }));
 
-}));
