@@ -292,23 +292,28 @@ app.use("/auth", createProxyMiddleware({
   changeOrigin: true
 }));
 
-// 🔁 Proxy all /api/* requests to Flask backend service
-const cookie = require("cookie");
 
-// 🔁 Proxy all /api/* requests to Flask backend service
+// in server.js
 app.use("/api", createProxyMiddleware({
-  target: "https://bot.wcahockey.com",
+  target: "http://localhost:5050",
   changeOrigin: true,
   pathRewrite: { "^/api": "" },
-  cookieDomainRewrite: {
-    "*": "wcahockey.com"  // Ensures cookies are accessible to frontend
-  },
+  cookieDomainRewrite: { "*": "wcahockey.com" },
   onProxyReq: (proxyReq, req) => {
-    // Forward raw cookie header to backend
+    if (req.cookies.user) {
+      try {
+        const user = JSON.parse(req.cookies.user);
+        proxyReq.setHeader("x-discord-id", user.id);
+        proxyReq.setHeader("x-discord-username", user.username);
+      } catch (err) {
+        console.warn("Invalid user cookie:", err);
+      }
+    }
     if (req.headers.cookie) {
       proxyReq.setHeader("cookie", req.headers.cookie);
     }
-  }
+  },
+  target: "http://localhost:5050",  // use port 5050!
+  changeOrigin: true,
+  pathRewrite: { "^/api": "" }
 }));
-
-
