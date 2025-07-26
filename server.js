@@ -295,7 +295,7 @@ app.use("/auth", createProxyMiddleware({
 
 // in server.js
 app.use("/api", createProxyMiddleware({
-  target: "http://localhost:5050",
+  target: "https://bot.wcahockey.com",
   changeOrigin: true,
   pathRewrite: { "^/api": "" },
   cookieDomainRewrite: { "*": "wcahockey.com" },
@@ -313,7 +313,7 @@ app.use("/api", createProxyMiddleware({
       proxyReq.setHeader("cookie", req.headers.cookie);
     }
   },
-  target: "http://localhost:5050",  // use port 5050!
+  target: "https://bot.wcahockey.com",  // use port 5050!
   changeOrigin: true,
   pathRewrite: { "^/api": "" }
 }));
