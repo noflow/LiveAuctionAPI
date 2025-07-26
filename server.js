@@ -293,14 +293,22 @@ app.use("/auth", createProxyMiddleware({
 }));
 
 // 🔁 Proxy all /api/* requests to Flask backend service
+const cookie = require("cookie");
+
+// 🔁 Proxy all /api/* requests to Flask backend service
 app.use("/api", createProxyMiddleware({
   target: "https://bot.wcahockey.com",
   changeOrigin: true,
   pathRewrite: { "^/api": "" },
+  cookieDomainRewrite: {
+    "*": "wcahockey.com"  // Ensures cookies are accessible to frontend
+  },
   onProxyReq: (proxyReq, req) => {
-    if (req.cookies?.user) {
-      proxyReq.setHeader('Cookie', `user=${req.cookies.user}`);
+    // Forward raw cookie header to backend
+    if (req.headers.cookie) {
+      proxyReq.setHeader("cookie", req.headers.cookie);
     }
   }
 }));
+
 
