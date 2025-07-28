@@ -300,20 +300,18 @@ app.use("/api", createProxyMiddleware({
   pathRewrite: { "^/api": "" },
   cookieDomainRewrite: { "*": "wcahockey.com" },
   onProxyReq: (proxyReq, req) => {
-    if (req.cookies.user) {
+    if (req.cookies?.user) {
       try {
         const user = JSON.parse(req.cookies.user);
         proxyReq.setHeader("x-discord-id", user.id);
         proxyReq.setHeader("x-discord-username", user.username);
+        console.log("✅ Injected user headers:", user.id, user.username);
       } catch (err) {
-        console.warn("Invalid user cookie:", err);
+        console.warn("⚠️ Failed to parse user cookie:", err.message);
       }
     }
     if (req.headers.cookie) {
       proxyReq.setHeader("cookie", req.headers.cookie);
     }
-  },
-  target: "https://bot.wcahockey.com",  // use port 5050!
-  changeOrigin: true,
-  pathRewrite: { "^/api": "" }
+  }
 }));
