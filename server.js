@@ -1,4 +1,8 @@
 // NOTE: run `npm install http-proxy-middleware` if not already installed
+setInterval(() => {
+  console.log("💓 Keep-alive heartbeat");
+}, 10000);
+
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
