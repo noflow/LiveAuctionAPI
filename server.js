@@ -1,5 +1,6 @@
 // NOTE: run `npm install http-proxy-middleware` if not already installed
 const express = require("express");
+const cookie = require("cookie");
 const http = require("http");
 const { Server } = require("socket.io");
 const axios = require("axios");
@@ -299,15 +300,13 @@ app.use("/api", createProxyMiddleware({
   target: "https://bot.wcahockey.com",
   changeOrigin: true,
   pathRewrite: { "^/api": "" },
-  onProxyReq: (proxyReq, req) => {
-  console.log("🔁 Incoming request to:", req.originalUrl);
-  console.log("🔍 Raw Cookie Header:", req.headers.cookie);
+onProxyReq: (proxyReq, req) => {
+  let rawCookie = req.headers.cookie || "";
+  let parsedCookies = req.cookies || cookie.parse(rawCookie);
 
-  if (req.cookies?.user) {
+  if (parsedCookies.user) {
     try {
-      const user = JSON.parse(req.cookies.user);
-      console.log("✅ Parsed user from cookie:", user);
-
+      const user = JSON.parse(parsedCookies.user);
       proxyReq.setHeader("x-discord-id", user.id);
       proxyReq.setHeader("x-discord-username", user.username);
       console.log("✅ Injected user headers:", user.id, user.username);
@@ -318,9 +317,10 @@ app.use("/api", createProxyMiddleware({
     console.warn("❌ No user cookie found on request.");
   }
 
-  if (req.headers.cookie) {
-    proxyReq.setHeader("cookie", req.headers.cookie);
+  if (rawCookie) {
+    proxyReq.setHeader("cookie", rawCookie);
     console.log("🔁 Forwarded cookie header to Flask.");
   }
 }
+
 }));
