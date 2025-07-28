@@ -300,20 +300,27 @@ app.use("/api", createProxyMiddleware({
   changeOrigin: true,
   pathRewrite: { "^/api": "" },
   onProxyReq: (proxyReq, req) => {
-    if (req.cookies?.user) {
-      try {
-        const user = JSON.parse(req.cookies.user);
-        proxyReq.setHeader("x-discord-id", user.id);
-        proxyReq.setHeader("x-discord-username", user.username);
-        console.log("✅ Injected user headers:", user.id, user.username);
-      } catch (err) {
-        console.warn("⚠️ Failed to parse user cookie:", err.message);
-      }
-    }
+  console.log("🔁 Incoming request to:", req.originalUrl);
+  console.log("🔍 Raw Cookie Header:", req.headers.cookie);
 
-    // 🔁 Always forward original cookie
-    if (req.headers.cookie) {
-      proxyReq.setHeader("cookie", req.headers.cookie);
+  if (req.cookies?.user) {
+    try {
+      const user = JSON.parse(req.cookies.user);
+      console.log("✅ Parsed user from cookie:", user);
+
+      proxyReq.setHeader("x-discord-id", user.id);
+      proxyReq.setHeader("x-discord-username", user.username);
+      console.log("✅ Injected user headers:", user.id, user.username);
+    } catch (err) {
+      console.warn("⚠️ Failed to parse user cookie:", err.message);
     }
+  } else {
+    console.warn("❌ No user cookie found on request.");
   }
+
+  if (req.headers.cookie) {
+    proxyReq.setHeader("cookie", req.headers.cookie);
+    console.log("🔁 Forwarded cookie header to Flask.");
+  }
+}
 }));
