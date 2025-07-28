@@ -306,6 +306,7 @@ app.use("/api", createProxyMiddleware({
         proxyReq.setHeader("x-discord-id", user.id);
         proxyReq.setHeader("x-discord-username", user.username);
         console.log("✅ Injected user headers:", user.id, user.username);
+      console.log("🚀 Forwarding headers:", proxyReq.getHeaders());
       } catch (err) {
         console.warn("⚠️ Failed to parse user cookie:", err.message);
       }
