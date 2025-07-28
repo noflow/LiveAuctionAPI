@@ -301,12 +301,21 @@ app.use("/api", createProxyMiddleware({
   cookieDomainRewrite: { "*": "wcahockey.com" },
   onProxyReq: (proxyReq, req) => {
     if (req.cookies?.user) {
+    console.log("🔍 req.cookies:", req.cookies);
+    console.log("🔍 Raw cookie header:", req.headers.cookie);
+    try {
+      const parsed = JSON.parse(req.cookies.user);
+      console.log("✅ Injected user headers:", parsed.id, parsed.username);
+      proxyReq.setHeader("x-discord-id", parsed.id);
+      proxyReq.setHeader("x-discord-username", parsed.username);
+    } catch (err) {
+      console.warn("⚠️ Failed to parse user cookie:", err);
+    }
       try {
         const user = JSON.parse(req.cookies.user);
         proxyReq.setHeader("x-discord-id", user.id);
         proxyReq.setHeader("x-discord-username", user.username);
         console.log("✅ Injected user headers:", user.id, user.username);
-      console.log("🚀 Forwarding headers:", proxyReq.getHeaders());
       } catch (err) {
         console.warn("⚠️ Failed to parse user cookie:", err.message);
       }
