@@ -1,8 +1,4 @@
 // NOTE: run `npm install http-proxy-middleware` if not already installed
-setInterval(() => {
-  console.log("💓 Keep-alive heartbeat");
-}, 10000);
-
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
@@ -298,23 +294,13 @@ app.use("/auth", createProxyMiddleware({
 
 
 // in server.js
+// 🔁 Proxy all /api/* requests to Flask backend
 app.use("/api", createProxyMiddleware({
   target: "https://bot.wcahockey.com",
   changeOrigin: true,
   pathRewrite: { "^/api": "" },
-  cookieDomainRewrite: { "*": "wcahockey.com" },
   onProxyReq: (proxyReq, req) => {
     if (req.cookies?.user) {
-    console.log("🔍 req.cookies:", req.cookies);
-    console.log("🔍 Raw cookie header:", req.headers.cookie);
-    try {
-      const parsed = JSON.parse(req.cookies.user);
-      console.log("✅ Injected user headers:", parsed.id, parsed.username);
-      proxyReq.setHeader("x-discord-id", parsed.id);
-      proxyReq.setHeader("x-discord-username", parsed.username);
-    } catch (err) {
-      console.warn("⚠️ Failed to parse user cookie:", err);
-    }
       try {
         const user = JSON.parse(req.cookies.user);
         proxyReq.setHeader("x-discord-id", user.id);
@@ -324,6 +310,8 @@ app.use("/api", createProxyMiddleware({
         console.warn("⚠️ Failed to parse user cookie:", err.message);
       }
     }
+
+    // 🔁 Always forward original cookie
     if (req.headers.cookie) {
       proxyReq.setHeader("cookie", req.headers.cookie);
     }
